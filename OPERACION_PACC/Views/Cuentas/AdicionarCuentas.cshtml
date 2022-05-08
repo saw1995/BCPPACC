@@ -1,0 +1,95 @@
+﻿
+@{
+    ViewData["Title"] = "AdicionarCuentas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    List<string> moneda = new List<string>();
+    moneda.Add(new string("Bolivianos"));
+    moneda.Add(new string("Dolares"));
+}
+
+
+<h1>Adición de Cuentas</h1>
+
+<div class="container">
+    <div class="row">
+
+        <form>
+            <label for="txtdescripcion">Número:</label>
+            <input type="text" class="form-control required" id="txtNumero" autocomplete="off">
+            <br />
+            <label for="txtdescripcion">Moneda:</label>
+
+            <select class="form-control" id="cbMoneda">
+                @foreach (string c in moneda)
+                {
+                    <option value="@c">@c</option>
+                }
+
+            </select>
+
+            <br />
+
+            <label for="txtdescripcion">Nombre:</label>
+            <input type="text" class="form-control required" id="txtNombre" autocomplete="off">
+
+            <br />
+            <input type="button" id="btnPrueba" value="Guardar" class="btn btn-success" onclick="agregarCuenta()" />
+            <input type="button" id="btnCancelar" value="Cancelar" class="btn btn-danger" onclick="cancelar()"/>
+        </form>
+    </div>
+    
+</div>
+<script>
+
+    function agregarCuenta() {
+                var numero = document.getElementById("txtNumero").value;
+                var moneda = document.getElementById("cbMoneda").value;
+                var nombre = document.getElementById("txtNombre").value;
+
+                var parametros = {
+                    "numero": numero,
+                    "moneda": moneda,
+                    "nombre": nombre
+                };
+
+        var url = "agregarCuenta";
+
+                console.log(numero, moneda, nombre)
+
+                $.ajax({
+                    type: "POST",
+                    data: parametros,
+                    url: url,
+                    success: function (data) {
+                        if (data.estado == 1) {
+                            Swal.fire(
+                                'Cuenda Adicionada',
+                                'La Cuenta se ha creado correctamente.',
+                                'success'
+                            )
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Datos Vacios',
+                                text: data.mensaje,
+                                footer: '<a href="">Revise el formulario e intente nuevamente.</a>'
+                            })
+                        }
+
+                        document.getElementById("txtNumero").value = "";
+                        document.getElementById("txtNombre").value = "";
+                    }
+                });
+
+            }
+
+    function cancelar() {
+        var mapForm = document.createElement("form");
+        mapForm.method = "POST";
+        mapForm.action = "/";
+        document.body.appendChild(mapForm);
+        mapForm.submit();
+
+    }
+</script>

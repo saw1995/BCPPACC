@@ -1,0 +1,191 @@
+﻿
+@{
+    ViewData["Title"] = "MovimientosCuenta";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Movimientos de cuenta</h1>
+
+<div class="container">
+    <div class="col-md-8">
+        <h2 class="mb-0">Cuenta</h2>
+    </div>
+    <div class="col-md-4">
+        <div class="float-right">
+            <div class="col-md-4">
+
+                <div class="modal fade" id="modalMovimiento" tabindex="-1" role="dialog" aria-labelledby="modal-form" aria-hidden="true">
+                    <div class="modal-dialog modal- modal-dialog-centered modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-body p-0">
+                                <div class="card bg-white shadow border-0 mb-0">
+                                    <div class="card-body px-lg-12 py-lg-12">
+
+                                        <div class="row gutters-xs">
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label for="txtdescripcion">Cuenta:</label>
+                                                    <input type="text" class="form-control required" id="txtCuenta" disabled>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label for="txtdescripcion">Nombre Cuenta:</label>
+                                                    <input type="text" class="form-control required" id="txtNombre" disabled>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row gutters-xs">
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label for="txtdescripcion">Saldo:</label>
+                                                    <input type="text" class="form-control required" id="txtSaldo" disabled>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label for="txtdescripcion">Moneda:</label>
+                                                    <input type="text" class="form-control required" id="txtMoneda" disabled>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-center text-black mb-12 h2">MOVIMIENTOS DE CUENTA</div>
+
+                                        <div class="row">
+                                            <table class="table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Fecha - Hora</th>
+                                                        <th>Importe</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody id="tablaBodyMovimiento">
+                                                </tbody>
+
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Moneda</th>
+                    <th>Cuenta</th>
+                    <th>Titulo</th>
+                    <th>saldo</th>
+                    <th>Movimiento</th>
+                </tr>
+            </thead>
+
+            <tbody id="tablaBodyCuenta">
+            </tbody>
+
+        </table>
+    </div>
+
+</div>
+
+@section scripts{
+
+    <script>
+
+        $(document).ready(function () {
+            listaCuentas()
+        });
+
+        function listaCuentas() {
+            var parametros = {};
+            var url = "listaCuentas";
+
+            $.ajax({
+                type: "POST",
+                data: parametros,
+                url: url,
+                success: function (data) {
+                    console.log(data)
+                    datosRecibidos = data.datos;
+                    var cadena = ""
+
+                    for (i = 0; i < datosRecibidos.length; i++) {
+                        cadena = cadena +
+                            "<tr>" +
+                            "<td>" + datosRecibidos[i]["tipo"] + "</td>" +
+                            "<td>" + datosRecibidos[i]["moneda"] + "</td>" +
+                            "<td>" + datosRecibidos[i]["nro_cuenta"] + "</td>" +
+                            "<td>" + datosRecibidos[i]["nombre"] + "</td>" +
+                            "<td>" + datosRecibidos[i]["saldo"] + "</td>" +
+                            "<th scope='row'>" +
+                            "<button class='btn btn btn-sm btn-pill btn-primary mt-1 mb-1' type='button' data-toggle='tooltip' data-placement='top' title='Tooltip on top' onclick='listaMovimiento(\"" + datosRecibidos[i]["nro_cuenta"] + "\",\"" + datosRecibidos[i]["nombre"] + "\",\"" + datosRecibidos[i]["moneda"] + "\",\"" +  datosRecibidos[i]["saldo"] +"\")'><span class='btn-inner--icon'><i class='fe fe-check-square'></i> VER</span></button>" +
+                            "</th>" +
+                            "</tr>";
+                    }
+                    document.getElementById("tablaBodyCuenta").innerHTML = cadena;
+                }
+            });
+        }
+
+        function listaMovimiento(nro_cuenta, nombre, moneda, saldo) {
+            if (moneda == "BOL") {
+                moneda = "BOLIVIANOS"
+            }
+
+            if (moneda == "USD") {
+                moneda = "DOLARES"
+            }
+
+            document.getElementById("txtCuenta").value = nro_cuenta;
+            document.getElementById("txtNombre").value = nombre;
+            document.getElementById("txtSaldo").value = saldo;
+            document.getElementById("txtMoneda").value = moneda;
+
+
+            var parametros = {
+                nro_cuenta: nro_cuenta
+            };
+            var url = "listaMovimientoByCuenta";
+
+            $.ajax({
+                type: "POST",
+                data: parametros,
+                url: url,
+                success: function (data) {
+                    console.log(data)
+                    datosRecibidos = data.datos;
+                    var cadena = ""
+
+                    for (i = 0; i < datosRecibidos.length; i++) {
+                        var importe = "";
+                        if (datosRecibidos[i]["tipo"] == "A") {
+                            importe = "- " + datosRecibidos[i]["importe"];
+                        } else {
+                            importe = "+ " + datosRecibidos[i]["importe"];
+                        }
+                        cadena = cadena +
+                            "<tr>" +
+                            "<td>" + datosRecibidos[i]["fecha"] + "</td>" +
+                            "<td>" + importe + "</td>" +
+                            "</tr>";
+                    }
+                    document.getElementById("tablaBodyMovimiento").innerHTML = cadena;
+
+                    $('#modalMovimiento').modal('show');
+                }
+            });
+        }
+       
+    </script>
+
+}

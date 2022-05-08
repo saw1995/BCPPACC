@@ -1,0 +1,165 @@
+﻿@{
+    ViewData["Title"] = "AbonosCuentas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    List<string> moneda = new List<string>();
+}
+
+<h1>Abonos y Retiros</h1>
+
+<div class="container">
+    <div class="row">
+
+        <form>
+            <label>Cuenta:</label>
+
+            <select class="form-control" id="cbCuenta">
+                @foreach (string c in moneda)
+                {
+                    <option value="@c">@c</option>
+                }
+
+            </select>
+            <br />
+
+            <label>Monto:</label>
+            <input type="number" step="0.01" class="form-control required" id="txtMonto" autocomplete="off">
+            <br />
+
+            <input type="button" id="btnDeposito" value="Deposito" class="btn btn-success" onclick="deposito()" />
+            <input type="button" id="btnRetiro" value="Retiro" class="btn btn-primary" onclick="retiro()" />
+        </form>
+    </div>
+
+</div>
+
+@section scripts{
+
+<script>
+    var saldo_cuenta = [];
+
+    $(document).ready(function () {
+        listaCuentas()
+    });
+
+    function listaCuentas() {
+        var parametros = {};
+        var url = "listaCuentas";
+
+        $.ajax({
+            type: "POST",
+            data: parametros,
+            url: url,
+            success: function (data) {
+                console.log(data)
+                datosRecibidos = data.datos;
+                var cbCuenta = document.getElementById("cbCuenta");
+                while (cbCuenta.options.length) {
+                    cbCuenta.remove(0);
+                }
+                var tag = document.createElement('option');
+                tag.setAttribute('value', "");
+                tag.setAttribute('disabled', true);
+                tag.setAttribute('selected', true);
+                tag.innerHTML = "Seleccione una cuenta";
+                cbCuenta.appendChild(tag);
+                for (let i = 0; i < datosRecibidos.length; i++) {
+                    saldo_cuenta[i] = datosRecibidos[i]["saldo"]
+                    var tag = document.createElement('option');
+                    tag.setAttribute('value', datosRecibidos[i]["nro_cuenta"]);
+                    tag.innerHTML = datosRecibidos[i]["nro_cuenta"];
+                    cbCuenta.appendChild(tag);
+                }
+            }
+        });
+    }
+
+    function retiro() {
+        var index = document.getElementById("cbCuenta").selectedIndex - 1;
+        var monto = parseFloat(document.getElementById("txtMonto").value);
+        var nro_cuenta = document.getElementById("cbCuenta").value;
+
+        var saldo = parseFloat(saldo_cuenta[index]);
+        console.log(index)
+        console.log(monto, saldo)
+        if (monto <= saldo) {
+            var parametros = {
+                "nro_cuenta": nro_cuenta,
+                "tipo": "A",
+                "importe": monto,
+                "saldoActual": saldo
+            };
+
+        var url = "agregarMovimiento";
+        $.ajax({
+            type: "POST",
+            data: parametros,
+            url: url,
+            success: function (data) {
+                if (data.estado == 1) {
+                    Swal.fire(
+                        'Retiro correcto',
+                        '',
+                        'success'
+                    )
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No se registro el Retiro',
+                        text: data.mensaje
+                    })
+                }
+
+                document.getElementById("txtMonto").value = "0.0";
+            }
+        });
+    } else {
+        Swal.fire({
+            icon: 'error',
+            title: 'Saldo Insuficiente',
+            text: "No tiene saldo suficiente en su cuenta, seleccione otra cuenta."
+        })
+    }
+   }
+
+    function deposito() {
+        var index = document.getElementById("cbCuenta").selectedIndex -1 ;
+        var monto = parseFloat(document.getElementById("txtMonto").value);
+        var nro_cuenta = parseFloat(document.getElementById("cbCuenta").value);
+
+        var saldo = saldo_cuenta[index];
+
+        var parametros = {
+            "nro_cuenta": nro_cuenta,
+            "tipo": "D",
+            "importe": monto,
+            "saldoActual": saldo
+        };
+
+        var url = "agregarMovimiento";
+        $.ajax({
+            type: "POST",
+            data: parametros,
+            url: url,
+            success: function (data) {
+                if (data.estado == 1) {
+                    Swal.fire(
+                        'Deposito correcto',
+                        '',
+                        'success'
+                    )
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No se registro el Deposito',
+                        text: data.mensaje
+                    })
+                }
+
+                document.getElementById("txtMonto").value = "0.0";
+            }
+        });
+    }
+</script>
+
+}

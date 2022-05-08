@@ -1,0 +1,184 @@
+﻿
+@{
+    ViewData["Title"] = "transferenciasEntreCuentas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    List<string> moneda = new List<string>();
+}
+
+<h1>Transferencia entre cuentas</h1>
+
+<div class="container">
+    <div class="row">
+
+        <form>
+            <h2>Cuenta de origen</h2>
+
+            <label>Cuenta:</label>
+            <select class="form-control" id="cbCuentaOrigen" onclick="verSaldo()">
+                @foreach (string c in moneda)
+                {
+                    <option value="@c">@c</option>
+                }
+            </select>
+            <br />
+
+            <label>Saldo Disponible:</label>
+            <input type="text" class="form-control required" id="txtSaldoDisponible" autocomplete="off" readonly="readonly">
+            <br />
+
+            <h2>Cuenta de Destino</h2>
+
+            <label>Cuenta:</label>
+            <select class="form-control" id="cbCuentaDestino">
+                @foreach (string c in moneda)
+                {
+                    <option value="@c">@c</option>
+                }
+            </select>
+            <br />
+
+            <label>Saldo Disponible:</label>
+            <input type="text" class="form-control required" id="txtMonto" autocomplete="off">
+            <br />
+
+            <input type="button" id="btnAceptar" value="Aceptar" class="btn btn-success" onclick="transferencia()" />
+            <input type="button" id="btnCancelar" value="Cancelar" class="btn btn-danger" onclick="cancelar()" />
+        </form>
+    </div>
+
+</div>
+
+@section scripts{
+
+    <script>
+        var saldo_cuenta_origen = [];
+        var saldo_cuenta_destino = [];
+
+        $(document).ready(function () {
+            listaCuentas()
+        });
+
+
+        function cancelar() {
+            var mapForm = document.createElement("form");
+            mapForm.method = "POST";
+            mapForm.action = "/";
+            document.body.appendChild(mapForm);
+            mapForm.submit();
+
+        }
+
+        function listaCuentas() {
+            var parametros = {};
+            var url = "listaCuentas";
+
+            $.ajax({
+                type: "POST",
+                data: parametros,
+                url: url,
+                success: function (data) {
+
+                    datosRecibidos = data.datos;
+                    var cbCuentaOrigen = document.getElementById("cbCuentaOrigen");
+                    while (cbCuentaOrigen.options.length) {
+                        cbCuentaOrigen.remove(0);
+                    }
+                    var tag = document.createElement('option');
+                    tag.setAttribute('value', "");
+                    tag.setAttribute('disabled', true);
+                    tag.setAttribute('selected', true);
+                    tag.innerHTML = "Seleccione una cuenta";
+                    cbCuentaOrigen.appendChild(tag);
+                    for (let i = 0; i < datosRecibidos.length; i++) {
+                        saldo_cuenta_origen[i] = datosRecibidos[i]["saldo"]
+                        var tag = document.createElement('option');
+                        tag.setAttribute('value', datosRecibidos[i]["nro_cuenta"]);
+                        tag.innerHTML = datosRecibidos[i]["nro_cuenta"];
+                        cbCuentaOrigen.appendChild(tag);
+                    }
+
+                    var cbCuentaDestino = document.getElementById("cbCuentaDestino");
+                    while (cbCuentaDestino.options.length) {
+                        cbCuentaDestino.remove(0);
+                    }
+                    tag = document.createElement('option');
+                    tag.setAttribute('value', "");
+                    tag.setAttribute('disabled', true);
+                    tag.setAttribute('selected', true);
+                    tag.innerHTML = "Seleccione una cuenta";
+                    cbCuentaDestino.appendChild(tag);
+                    for (let i = 0; i < datosRecibidos.length; i++) {
+                        saldo_cuenta_destino[i] = datosRecibidos[i]["saldo"]
+                        var tag = document.createElement('option');
+                        tag.setAttribute('value', datosRecibidos[i]["nro_cuenta"]);
+                        tag.innerHTML = datosRecibidos[i]["nro_cuenta"];
+                        cbCuentaDestino.appendChild(tag);
+                    }
+                }
+            });
+        }
+
+        function verSaldo() {
+            var indexOrigen = document.getElementById("cbCuentaOrigen").selectedIndex - 1;
+            var saldo = parseFloat(saldo_cuenta_origen[indexOrigen]);
+            document.getElementById("txtSaldoDisponible").value = saldo;
+        }
+
+        function transferencia() {
+            var indexOrigen = document.getElementById("cbCuentaOrigen").selectedIndex - 1;
+            var indexDestino = document.getElementById("cbCuentaDestino").selectedIndex - 1;
+            var monto = parseFloat(document.getElementById("txtMonto").value);
+            var nro_cuenta_origen = document.getElementById("cbCuentaOrigen").value;
+            var nro_cuenta_destino = document.getElementById("cbCuentaDestino").value;
+
+            var saldo = parseFloat(saldo_cuenta_origen[indexOrigen]);
+
+            if (monto <= saldo) {
+                if (nro_cuenta_origen != nro_cuenta_destino) {
+                    var parametros = {
+                        "nro_cuenta_emisor": nro_cuenta_origen,
+                        "nro_cuenta_receptor": nro_cuenta_destino,
+                        "importe": monto
+                    };
+
+                    var url = "transferenciaMonto";
+                    $.ajax({
+                        type: "POST",
+                        data: parametros,
+                        url: url,
+                        success: function (data) {
+                            if (data.estado == 1) {
+                                Swal.fire(
+                                    'Trasnferencia correcto',
+                                    '',
+                                    'success'
+                                )
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'No se registro el Retiro',
+                                    text: data.mensaje
+                                })
+                            }
+
+                            document.getElementById("txtMonto").value = "0.0";
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'CUENTA INVALIDA',
+                        text: "Seleccione otra cuenta."
+                    })
+                }
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Saldo Insuficiente',
+                    text: "No tiene saldo suficiente en su cuenta, seleccione otra cuenta."
+                })
+            }
+        }
+    </script>
+
+}
